@@ -72,3 +72,24 @@ CODE: Bitmap Indexes in Details
     SELECT * FROM customers_temp WHERE cust_gender = 'M' AND cust_marital_status = 'married';
      
     DROP TABLE customers_temp;
+
+CODE: Composite Indexes and Order of Indexed Columns
+
+    CREATE TABLE sales_temp AS SELECT * FROM sales;
+     
+    CREATE INDEX sales_idx ON sales_temp(prod_id,cust_id,time_id);
+     
+    SELECT * FROM sales_temp WHERE prod_id = 13 AND cust_id = 2380 AND time_id = '10-JUL-98';
+     
+    SELECT * FROM sales_temp WHERE prod_id = 13 AND cust_id = 2380;
+     
+    SELECT * FROM sales_temp WHERE prod_id = 13 AND time_id = '10-JUL-98';
+     
+    SELECT * FROM sales_temp WHERE cust_id = 2380 AND time_id = '10-JUL-98';
+     
+    DROP INDEX sales_idx;
+    CREATE INDEX sales_idx ON sales_temp(cust_id,prod_id,time_id);
+     
+    SELECT * FROM sales_temp WHERE cust_id = 2380 AND time_id = '10-JUL-98';
+     
+    DROP TABLE sales_temp;
