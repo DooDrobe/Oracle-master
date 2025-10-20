@@ -93,3 +93,27 @@ CODE: Composite Indexes and Order of Indexed Columns
     SELECT * FROM sales_temp WHERE cust_id = 2380 AND time_id = '10-JUL-98';
      
     DROP TABLE sales_temp;
+
+
+CODE: Covering Indexes
+
+    CREATE TABLE sales_temp AS SELECT * FROM sales;
+     
+    CREATE INDEX sales_idx ON sales_temp(prod_id,cust_id,time_id);
+     
+    SELECT prod_id,cust_id FROM sales_temp
+    WHERE prod_id = 13;
+     
+    SELECT prod_id,cust_id,time_id FROM sales_temp
+    WHERE prod_id = 13;
+     
+    SELECT prod_id,cust_id,time_id,amount_sold FROM sales_temp
+    WHERE prod_id = 13;
+     
+    DROP INDEX sales_idx;
+    CREATE INDEX sales_idx ON sales_temp(prod_id,cust_id,time_id,amount_sold);
+     
+    SELECT prod_id,cust_id,time_id,amount_sold FROM sales_temp
+    WHERE prod_id = 13;
+     
+    DROP TABLE sales_temp;
