@@ -117,3 +117,88 @@ CODE: Covering Indexes
     WHERE prod_id = 13;
      
     DROP TABLE sales_temp;
+
+
+CODE: Bitmap Join Indexes
+
+    ALTER TABLE customers ENABLE VALIDATE CONSTRAINT customers_pk;
+
+    ALTER TABLE products ENABLE VALIDATE CONSTRAINT products_pk;
+
+
+    SELECT AVG(S.quantity_sold)
+
+    FROM sales S, products P, customers C
+
+    WHERE S.prod_id = P.prod_id
+
+    AND S.cust_id = C.cust_id
+
+    AND P.prod_subcategory = 'CD-ROM'
+
+    AND C.cust_city = 'Manchester';
+
+
+    CREATE BITMAP INDEX sales_temp_bjx ON sales(P.prod_subcategory, C.cust_city)
+
+    FROM sales S, products P, customers C
+
+    WHERE S.prod_id = P.prod_id
+
+    AND S.cust_id = C.cust_id
+
+    LOCAL;
+
+
+    DROP INDEX sales_temp_bjx;
+
+
+    SELECT DISTINCT C.cust_postal_code
+
+    FROM sales S, products P, customers C
+
+    WHERE S.prod_id = P.prod_id
+
+    AND S.cust_id = C.cust_id
+
+    AND C.cust_city = 'Manchester';
+
+
+    CREATE BITMAP INDEX sales_temp_bjx ON sales(C.cust_city)
+
+    FROM sales S, products P, customers C
+
+    WHERE S.prod_id = P.prod_id
+
+    AND S.cust_id = C.cust_id
+
+    LOCAL;
+
+
+    SELECT DISTINCT S.channel_id
+
+    FROM sales S, products P, customers C
+
+    WHERE S.prod_id = P.prod_id
+
+    AND S.cust_id = C.cust_id
+
+    AND C.cust_city = 'Manchester';
+
+
+    SELECT COUNT(*)
+
+    FROM sales S, products P, customers C
+
+    WHERE S.prod_id = P.prod_id
+
+    AND S.cust_id = C.cust_id
+
+    AND C.cust_city = 'Manchester';
+
+
+    DROP INDEX sales_temp_bjx;
+
+    ALTER TABLE customers ENABLE NOVALIDATE CONSTRAINT customers_pk;
+
+    ALTER TABLE products ENABLE NOVALIDATE CONSTRAINT products_pk;
