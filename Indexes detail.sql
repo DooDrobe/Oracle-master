@@ -284,3 +284,52 @@ CODE: Bitmap Join Indexes
      
     DROP TABLE customers_temp;
     DROP TABLE customers_iot;
+
+
+    CODE: Cluster Indexes
+
+    CREATE CLUSTER emp_dep_cluster (dep_id NUMBER(4,0))
+    TABLESPACE USERS
+    STORAGE (INITIAL 250K NEXT 50K )
+    HASH IS dep_id HASHKEYS 500;
+     
+    CREATE CLUSTER emp_dep_cluster (dep_id NUMBER(4,0))
+    TABLESPACE USERS
+    STORAGE (INITIAL 250K NEXT 50K );
+     
+    CREATE TABLE emps_clustered (
+    employee_id NUMBER(6,0) PRIMARY KEY,
+    first_name VARCHAR2(20),
+    last_name VARCHAR2(25),
+    department_id NUMBER(4,0)
+    ) CLUSTER emp_dep_cluster (department_id);
+     
+    CREATE TABLE deps_clustered (
+    department_id NUMBER(4,0) PRIMARY KEY,
+    department_name VARCHAR2(30)
+    ) CLUSTER emp_dep_cluster (department_id);
+     
+    CREATE INDEX emp_dept_index
+    ON CLUSTER emp_dep_cluster
+    TABLESPACE USERS
+    STORAGE (INITIAL 250K NEXT 50K);
+     
+    INSERT INTO emps_clustered (employee_id,first_name,last_name,department_id)
+    SELECT employee_id,first_name,last_name,department_id FROM employees;
+     
+    INSERT INTO deps_clustered (department_id,department_name)
+    SELECT department_id,department_name FROM departments;
+     
+    SELECT employee_id,first_name,department_name FROM emps_clustered E, deps_clustered D
+    WHERE E.department_id = D.department_id
+    AND E.department_id = 80;
+     
+    SELECT employee_id,first_name,department_name FROM emps_clustered E, deps_clustered D
+    WHERE E.department_id = D.department_id
+    AND E.department_id > 80;
+     
+    SELECT * FROM emps_clustered;
+     
+    DROP TABLE deps_clustered;
+    DROP TABLE emps_clustered;
+    DROP CLUSTER emp_dep_cluster;
