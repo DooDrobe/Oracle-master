@@ -203,133 +203,190 @@ CODE: Bitmap Join Indexes
 
     ALTER TABLE products ENABLE NOVALIDATE CONSTRAINT products_pk;
 
-    CODE: Combining Bitmap Indexes
+CODE: Combining Bitmap Indexes
 
-    CREATE TABLE customers_temp AS SELECT * FROM customers;
-     
-    CREATE INDEX cust_city_ix ON customers_temp(cust_city);
-    CREATE INDEX cust_name_ix ON customers_temp(cust_first_name,cust_last_name);
-     
-    SELECT * FROM customers_temp WHERE cust_city IN ('Aachen','Abingdon','Bolton','Santos');
-    SELECT * FROM customers_temp WHERE cust_city IN ('Aachen','Abingdon','Bolton','Santos','Barry','Westminster','Tilburg');
-    SELECT * FROM customers_temp WHERE cust_city IN ('Aachen','Abingdon','Bolton','Santos') AND cust_first_name = 'Abigail';
-    SELECT /*+ index(c cust_name_ix, cust_name_ix)*/* FROM customers_temp C WHERE cust_city IN ('Aachen','Abingdon','Bolton','Santos') AND cust_first_name = 'Abigail';
-     
-    DROP INDEX cust_city_ix;
-    DROP INDEX cust_name_ix;
-    CREATE BITMAP INDEX cust_city_bix ON customers_temp(cust_city);
-    CREATE BITMAP INDEX cust_name_bix ON customers_temp(cust_first_name,cust_last_name);
-     
-    SELECT * FROM customers_temp WHERE cust_city IN ('Aachen','Abingdon','Bolton','Santos');
-    SELECT * FROM customers_temp WHERE cust_city IN ('Aachen','Abingdon','Bolton','Santos','Barry','Westminster','Tilburg');
-    SELECT * FROM customers_temp WHERE cust_city IN ('Aachen','Abingdon','Bolton','Santos') AND cust_first_name = 'Abigail';
-     
-    DROP TABLE customers_temp;
+        CREATE TABLE customers_temp AS SELECT * FROM customers;
+        
+        CREATE INDEX cust_city_ix ON customers_temp(cust_city);
+        CREATE INDEX cust_name_ix ON customers_temp(cust_first_name,cust_last_name);
+        
+        SELECT * FROM customers_temp WHERE cust_city IN ('Aachen','Abingdon','Bolton','Santos');
+        SELECT * FROM customers_temp WHERE cust_city IN ('Aachen','Abingdon','Bolton','Santos','Barry','Westminster','Tilburg');
+        SELECT * FROM customers_temp WHERE cust_city IN ('Aachen','Abingdon','Bolton','Santos') AND cust_first_name = 'Abigail';
+        SELECT /*+ index(c cust_name_ix, cust_name_ix)*/* FROM customers_temp C WHERE cust_city IN ('Aachen','Abingdon','Bolton','Santos') AND cust_first_name = 'Abigail';
+        
+        DROP INDEX cust_city_ix;
+        DROP INDEX cust_name_ix;
+        CREATE BITMAP INDEX cust_city_bix ON customers_temp(cust_city);
+        CREATE BITMAP INDEX cust_name_bix ON customers_temp(cust_first_name,cust_last_name);
+        
+        SELECT * FROM customers_temp WHERE cust_city IN ('Aachen','Abingdon','Bolton','Santos');
+        SELECT * FROM customers_temp WHERE cust_city IN ('Aachen','Abingdon','Bolton','Santos','Barry','Westminster','Tilburg');
+        SELECT * FROM customers_temp WHERE cust_city IN ('Aachen','Abingdon','Bolton','Santos') AND cust_first_name = 'Abigail';
+        
+        DROP TABLE customers_temp;
 
-    CODE: Function-Based Indexes
+CODE: Function-Based Indexes
 
-    SELECT * FROM employees;
-    SELECT * FROM employees WHERE last_name = 'KING';
-    SELECT * FROM employees WHERE UPPER(last_name) = 'KING';
-     
-    CREATE INDEX last_name_fix ON employees (UPPER(last_name));
-    SELECT * FROM employees WHERE UPPER(substr(last_name,1,1)) = 'K';
-    DROP INDEX last_name_fix;
-     
-    CREATE INDEX last_name_fix ON employees (UPPER(substr(last_name,1,1)));
-    SELECT * FROM employees WHERE UPPER(substr(last_name,1,1)) = 'K';
-    SELECT * FROM employees WHERE UPPER(substr(last_name,1,2)) = 'KI';
-    DROP INDEX last_name_fix;
-     
-    CREATE INDEX annual_salary_fix ON employees(salary*12-300);
-    SELECT * FROM employees WHERE salary > 10000;
-    SELECT * FROM employees WHERE salary*12 > 10000;
-    SELECT * FROM employees WHERE salary*12-300 > 10000;
-    SELECT * FROM employees WHERE salary*12-301 > 10000+1;
-    DROP INDEX annual_salary_fix;
+        SELECT * FROM employees;
+        SELECT * FROM employees WHERE last_name = 'KING';
+        SELECT * FROM employees WHERE UPPER(last_name) = 'KING';
+        
+        CREATE INDEX last_name_fix ON employees (UPPER(last_name));
+        SELECT * FROM employees WHERE UPPER(substr(last_name,1,1)) = 'K';
+        DROP INDEX last_name_fix;
+        
+        CREATE INDEX last_name_fix ON employees (UPPER(substr(last_name,1,1)));
+        SELECT * FROM employees WHERE UPPER(substr(last_name,1,1)) = 'K';
+        SELECT * FROM employees WHERE UPPER(substr(last_name,1,2)) = 'KI';
+        DROP INDEX last_name_fix;
+        
+        CREATE INDEX annual_salary_fix ON employees(salary*12-300);
+        SELECT * FROM employees WHERE salary > 10000;
+        SELECT * FROM employees WHERE salary*12 > 10000;
+        SELECT * FROM employees WHERE salary*12-300 > 10000;
+        SELECT * FROM employees WHERE salary*12-301 > 10000+1;
+        DROP INDEX annual_salary_fix;
 
-    CODE: Index-Organized Tables
+CODE: Index-Organized Tables
 
-    CREATE TABLE customers_temp AS
-    SELECT cust_id,cust_first_name,cust_last_name,cust_gender,cust_year_of_birth,
-    cust_marital_status,cust_postal_code,cust_city_id,cust_credit_limit FROM customers;
-     
-    CREATE INDEX cus_ix ON customers_temp(cust_id);
-     
-    CREATE TABLE customers_iot (cust_id NUMBER,
-    cust_first_name VARCHAR2(20),
-    cust_last_name VARCHAR2(40),
-    cust_gender CHAR(1),
-    cust_year_of_birth NUMBER(4,0),
-    cust_marital_status VARCHAR2(20),
-    cust_postal_code VARCHAR2(10),
-    cust_city_id NUMBER,
-    cust_credit_limit NUMBER,
-    CONSTRAINT cid_pk PRIMARY KEY (cust_id))
-    ORGANIZATION INDEX
-    PCTTHRESHOLD 40;
-     
-    INSERT INTO customers_iot SELECT cust_id,cust_first_name,cust_last_name,cust_gender,cust_year_of_birth,
-    cust_marital_status,cust_postal_code,cust_city_id,cust_credit_limit FROM customers;
-     
-    /
-    SELECT * FROM customers_temp WHERE cust_id = 47006;
-    SELECT * FROM customers_iot WHERE cust_id = 47006;
-    SELECT * FROM customers_temp WHERE cust_id BETWEEN 5000 AND 5050;
-    SELECT * FROM customers_iot WHERE cust_id BETWEEN 5000 AND 5050;
-    SELECT * FROM customers_temp WHERE cust_id BETWEEN 5000 AND 10000;
-    SELECT * FROM customers_iot WHERE cust_id BETWEEN 5000 AND 10000;
-    SELECT * FROM customers_temp WHERE cust_year_of_birth = 1978;
-    SELECT * FROM customers_iot WHERE cust_year_of_birth = 1978;
-     
-    DROP TABLE customers_temp;
-    DROP TABLE customers_iot;
+        CREATE TABLE customers_temp AS
+        SELECT cust_id,cust_first_name,cust_last_name,cust_gender,cust_year_of_birth,
+        cust_marital_status,cust_postal_code,cust_city_id,cust_credit_limit FROM customers;
+        
+        CREATE INDEX cus_ix ON customers_temp(cust_id);
+        
+        CREATE TABLE customers_iot (cust_id NUMBER,
+        cust_first_name VARCHAR2(20),
+        cust_last_name VARCHAR2(40),
+        cust_gender CHAR(1),
+        cust_year_of_birth NUMBER(4,0),
+        cust_marital_status VARCHAR2(20),
+        cust_postal_code VARCHAR2(10),
+        cust_city_id NUMBER,
+        cust_credit_limit NUMBER,
+        CONSTRAINT cid_pk PRIMARY KEY (cust_id))
+        ORGANIZATION INDEX
+        PCTTHRESHOLD 40;
+        
+        INSERT INTO customers_iot SELECT cust_id,cust_first_name,cust_last_name,cust_gender,cust_year_of_birth,
+        cust_marital_status,cust_postal_code,cust_city_id,cust_credit_limit FROM customers;
+        
+        /
+        SELECT * FROM customers_temp WHERE cust_id = 47006;
+        SELECT * FROM customers_iot WHERE cust_id = 47006;
+        SELECT * FROM customers_temp WHERE cust_id BETWEEN 5000 AND 5050;
+        SELECT * FROM customers_iot WHERE cust_id BETWEEN 5000 AND 5050;
+        SELECT * FROM customers_temp WHERE cust_id BETWEEN 5000 AND 10000;
+        SELECT * FROM customers_iot WHERE cust_id BETWEEN 5000 AND 10000;
+        SELECT * FROM customers_temp WHERE cust_year_of_birth = 1978;
+        SELECT * FROM customers_iot WHERE cust_year_of_birth = 1978;
+        
+        DROP TABLE customers_temp;
+        DROP TABLE customers_iot;
 
 
-    CODE: Cluster Indexes
+CODE: Cluster Indexes
 
-    CREATE CLUSTER emp_dep_cluster (dep_id NUMBER(4,0))
-    TABLESPACE USERS
-    STORAGE (INITIAL 250K NEXT 50K )
-    HASH IS dep_id HASHKEYS 500;
-     
-    CREATE CLUSTER emp_dep_cluster (dep_id NUMBER(4,0))
-    TABLESPACE USERS
-    STORAGE (INITIAL 250K NEXT 50K );
-     
-    CREATE TABLE emps_clustered (
-    employee_id NUMBER(6,0) PRIMARY KEY,
-    first_name VARCHAR2(20),
-    last_name VARCHAR2(25),
-    department_id NUMBER(4,0)
-    ) CLUSTER emp_dep_cluster (department_id);
-     
-    CREATE TABLE deps_clustered (
-    department_id NUMBER(4,0) PRIMARY KEY,
-    department_name VARCHAR2(30)
-    ) CLUSTER emp_dep_cluster (department_id);
-     
-    CREATE INDEX emp_dept_index
-    ON CLUSTER emp_dep_cluster
-    TABLESPACE USERS
-    STORAGE (INITIAL 250K NEXT 50K);
-     
-    INSERT INTO emps_clustered (employee_id,first_name,last_name,department_id)
-    SELECT employee_id,first_name,last_name,department_id FROM employees;
-     
-    INSERT INTO deps_clustered (department_id,department_name)
-    SELECT department_id,department_name FROM departments;
-     
-    SELECT employee_id,first_name,department_name FROM emps_clustered E, deps_clustered D
-    WHERE E.department_id = D.department_id
-    AND E.department_id = 80;
-     
-    SELECT employee_id,first_name,department_name FROM emps_clustered E, deps_clustered D
-    WHERE E.department_id = D.department_id
-    AND E.department_id > 80;
-     
-    SELECT * FROM emps_clustered;
-     
-    DROP TABLE deps_clustered;
-    DROP TABLE emps_clustered;
-    DROP CLUSTER emp_dep_cluster;
+        CREATE CLUSTER emp_dep_cluster (dep_id NUMBER(4,0))
+        TABLESPACE USERS
+        STORAGE (INITIAL 250K NEXT 50K )
+        HASH IS dep_id HASHKEYS 500;
+        
+        CREATE CLUSTER emp_dep_cluster (dep_id NUMBER(4,0))
+        TABLESPACE USERS
+        STORAGE (INITIAL 250K NEXT 50K );
+        
+        CREATE TABLE emps_clustered (
+        employee_id NUMBER(6,0) PRIMARY KEY,
+        first_name VARCHAR2(20),
+        last_name VARCHAR2(25),
+        department_id NUMBER(4,0)
+        ) CLUSTER emp_dep_cluster (department_id);
+        
+        CREATE TABLE deps_clustered (
+        department_id NUMBER(4,0) PRIMARY KEY,
+        department_name VARCHAR2(30)
+        ) CLUSTER emp_dep_cluster (department_id);
+        
+        CREATE INDEX emp_dept_index
+        ON CLUSTER emp_dep_cluster
+        TABLESPACE USERS
+        STORAGE (INITIAL 250K NEXT 50K);
+        
+        INSERT INTO emps_clustered (employee_id,first_name,last_name,department_id)
+        SELECT employee_id,first_name,last_name,department_id FROM employees;
+        
+        INSERT INTO deps_clustered (department_id,department_name)
+        SELECT department_id,department_name FROM departments;
+        
+        SELECT employee_id,first_name,department_name FROM emps_clustered E, deps_clustered D
+        WHERE E.department_id = D.department_id
+        AND E.department_id = 80;
+        
+        SELECT employee_id,first_name,department_name FROM emps_clustered E, deps_clustered D
+        WHERE E.department_id = D.department_id
+        AND E.department_id > 80;
+        
+        SELECT * FROM emps_clustered;
+        
+        DROP TABLE deps_clustered;
+        DROP TABLE emps_clustered;
+        DROP CLUSTER emp_dep_cluster;
+
+
+CODE: Invisible Indexes
+
+        create table customers_temp as select * from customers;
+        
+        select * from customers_temp;
+        
+        create index name_idx on customers_temp(cust_first_name,cust_last_name);
+        
+        select * from customers_temp where cust_first_name = 'Arnold';
+        
+        alter index name_idx invisible;
+        alter index name_idx visible;
+        
+        create bitmap index name_bidx on customers_temp(cust_first_name,cust_last_name);
+        
+        drop table customers_temp;
+
+
+CODE: Index Key Compression
+
+        CREATE TABLE sales_temp AS SELECT * FROM sales;
+        
+        CREATE INDEX sales_idx ON sales_temp(prod_id,cust_id,time_id,amount_sold);
+        
+        SELECT BYTES/(1024*1024) mb FROM user_segments WHERE  segment_name = 'SALES_IDX';
+        
+        SELECT index_name, index_type, leaf_blocks, compression FROM user_indexes
+        WHERE index_name = 'SALES_IDX';
+        
+        SELECT prod_id,cust_id,time_id FROM sales_temp 
+        WHERE prod_id = 13; 
+        
+        ALTER INDEX sales_idx REBUILD COMPRESS 1;
+        
+        ALTER INDEX sales_idx REBUILD COMPRESS 2;
+        
+        ALTER INDEX sales_idx REBUILD COMPRESS 3;
+        
+        ALTER INDEX sales_idx REBUILD COMPRESS;
+        
+        ALTER INDEX sales_idx REBUILD COMPRESS ADVANCED LOW;
+        
+        ALTER INDEX sales_idx REBUILD COMPRESS ADVANCED HIGH;
+        
+        DROP INDEX sales_idx;
+        CREATE BITMAP INDEX sales_idx ON sales_temp(prod_id,cust_id,time_id,amount_sold);
+        
+        DROP INDEX sales_idx;
+        CREATE BITMAP INDEX sales_idx ON sales_temp(prod_id,cust_id,time_id,amount_sold) COMPRESS;
+        
+        DROP INDEX sales_idx;
+        CREATE INDEX sales_idx ON sales_temp(prod_id) COMPRESS;
+        
+        DROP TABLE sales_temp;
+
